@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post and Comment Test</title>
+    <script>
+        async function createPost() {
+            const content = document.getElementById('postContent').value;
+            const photo = document.getElementById('postPhoto').value;
+            const reviewStatus = 1; // 直接设置为通过状态
+            const reviewMessage = "Approved"; // 直接设置为通过信息
+            const userId = 1; // 固定的 userId，方便测试
+
+            const post = { content, photo, reviewStatus, reviewMessage, userId };
+
+            const response = await fetch('/posts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(post)
+            });
+
+            if (response.ok) {
+                alert('Post created successfully!');
+                loadPosts();
+            } else {
+                alert('Failed to create post.');
+            }
+        }
+
+        async function loadPosts() {
+            const response = await fetch('/posts');
+            const posts = await response.json();
+            const postsList = document.getElementById('postsList');
+            postsList.innerHTML = '';
+
+            posts.forEach(post => {
+                const postItem = document.createElement('li');
+                postItem.innerHTML = `
+                    ID: ${post.id}, Content: ${post.content}, Photo: ${post.photo}, User ID: ${post.userId}
+                    <button onclick="showCommentForm(${post.id})">Add Comment</button>
+                    <button onclick="loadComments(${post.id})">Show Comments</button>
+                    <div id="commentForm${post.id}" style="display: none;">
+                        <h3>Add a Comment</h3>
+                        <form onsubmit="event.preventDefault(); createComment(${post.id});">
+                            <label for="commentContent${post.id}">Content:</label>
+                            <input type="text" id="commentContent${post.id}" required>
+                            <br>
+                            <button type="submit">Create Comment</button>
+                        </form>
+                        <h3>Comments</h3>
+                        <ul id="commentsList${post.id}"></ul>
+                    </div>
+                `;
+                postsList.appendChild(postItem);
+            });
+        }
+
+        async function createComment(postId) {
+            const content = document.getElementById(`commentContent${postId}`).value;
+            const userId = 1; // 固定的 userId，方便测试
+
+            const comment = { content, userId };
+
+            const response = await fetch(`/posts/${postId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(comment)
+            });
+
+            if (response.ok) {
+                alert('Comment created successfully!');
+                loadComments(postId);
+            } else {
+                alert('Failed to create comment.');
+            }
+        }
+
+        async function loadComments(postId) {
+            const response = await fetch(`/posts/${postId}/comments`);
+            const comments = await response.json();
+            const commentsList = document.getElementById(`commentsList${postId}`);
+            commentsList.innerHTML = '';
+
+            comments.forEach(comment => {
+                const commentItem = document.createElement('li');
+                commentItem.textContent = `ID: ${comment.id}, Content: ${comment.content}, User ID: ${comment.userId}`;
+                commentsList.appendChild(commentItem);
+            });
+        }
+
+        function showCommentForm(postId) {
+            const commentForm = document.getElementById(`commentForm${postId}`);
+            commentForm.style.display = 'block';
+        }
+
+        document.addEventListener('DOMContentLoaded', loadPosts);
+    </script>
+</head>
+<body>
+<h1>Post and Comment Test</h1>
+<h2>Create a New Post</h2>
+<form onsubmit="event.preventDefault(); createPost();">
+    <label for="postContent">Content:</label>
+    <input type="text" id="postContent" required>
+    <br>
+    <label for="postPhoto">Photo URL:</label>
+    <input type="text" id="postPhoto">
+    <br>
+    <button type="submit">Create Post</button>
+</form>
+<h2>Posts</h2>
+<ul id="postsList"></ul>
+</body>
+</html>
